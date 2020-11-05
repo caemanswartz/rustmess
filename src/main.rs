@@ -45,6 +45,11 @@ fn load_normal_map(display: &glium::Display, format: image::ImageFormat, file_pa
     glium::texture::Texture2d::new(display, raw_image).unwrap()
 }
 
+fn build_program(display: &glium::Display) -> glium::Program {
+    let vertex_shader_src = String::from_utf8_lossy(&include_bytes!("./vertex_shader.glsl")[..]);
+    let fragment_shader_src = String::from_utf8_lossy(&include_bytes!("./fragment_shader.glfl")[..]);
+    glium::Program::from_source(display, &vertex_shader_src, &fragment_shader_src, None).unwrap()
+}
 implement_vertex!(Vertex, position, normal, tex_coords);
 
 fn main() {
@@ -66,25 +71,11 @@ fn main() {
             Vertex { position: [ 1.0, -1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [1.0, 0.0] },
         ]).unwrap();
 
-// load images, pull out
-/*
-    let image = image::load(Cursor::new(&include_bytes!("./tuto-14-diffuse.jpg")[..]),
-                            image::ImageFormat::Jpeg).unwrap().to_rgba();
-    let image_dimensions = image.dimensions();
-    let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-    let diffuse_texture = glium::texture::SrgbTexture2d::new(&display, image).unwrap();
- */
     let diffuse_map = load_diffuse_map(&display, image::ImageFormat::Jpeg, "src/tuto-14-diffuse.jpg");
     let normal_map = load_normal_map(&display, image::ImageFormat::Png, "src/tuto-14-normal.png");
 
-// building program data, pull out
+    let program = build_program(&display);
 
-    let vertex_shader_src = String::from_utf8_lossy(&include_bytes!("./vertex_shader.glsl")[..]);
-
-    let fragment_shader_src = String::from_utf8_lossy(&include_bytes!("./fragment_shader.glfl")[..]);
-
-    let program = glium::Program::from_source(&display, &vertex_shader_src, &fragment_shader_src,
-                                              None).unwrap();
 // event loop, leave in
 
     event_loop.run(move |event, _, control_flow| {
