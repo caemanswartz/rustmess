@@ -42,7 +42,7 @@ fn main() {
     let diffuse_map = load_diffuse_map(&display, image::ImageFormat::Jpeg, "src/tuto-14-diffuse.jpg");
     let normal_map = load_normal_map(&display, image::ImageFormat::Png, "src/tuto-14-normal.png");
 
-    let program = build_program(&display);
+    let program = build_program(&display, "src/vertex_shader.glsl", "src/fragment_shader.glfl");
 
 // event loop, leave in
 
@@ -142,9 +142,11 @@ fn load_normal_map(display: &glium::Display, format: image::ImageFormat, file_pa
 }
 
 // constructs opengl program
-fn build_program(display: &glium::Display) -> glium::Program {
-    let vertex_shader_src = String::from_utf8_lossy(&include_bytes!("./vertex_shader.glsl")[..]);
-    let fragment_shader_src = String::from_utf8_lossy(&include_bytes!("./fragment_shader.glfl")[..]);
+fn build_program(display: &glium::Display, vertex_shader_file_path: &str, fragment_shader_file_path: &str) -> glium::Program {
+    let vertex_shader_bytes = load_bytes(vertex_shader_file_path);
+    let vertex_shader_src = String::from_utf8_lossy(&vertex_shader_bytes);
+    let fragment_shader_bytes = load_bytes(fragment_shader_file_path);
+    let fragment_shader_src = String::from_utf8_lossy(&fragment_shader_bytes);
     glium::Program::from_source(display, &vertex_shader_src, &fragment_shader_src, None).unwrap()
 }
 
