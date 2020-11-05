@@ -9,48 +9,16 @@ use std::{
     io::prelude::*,
     path::Path
 };
-
+// vertex structure setup
 #[derive(Copy, Clone)]
 struct Vertex {
     position: [f32; 3],
     normal: [f32; 3],
     tex_coords: [f32; 2],
 }
-fn load_bytes(file_path: &str) -> Vec<u8> {
-    let path = Path::new(file_path);
-    let mut file = match File::open(&path) {
-        Err(why) => panic!("Couldn't open {}: {}", path.display(), why),
-        Ok(file) => file,
-    };
-    let mut buffer = Vec::new();
-    match file.read_to_end(&mut buffer) {
-        Err(why) => panic!("Couldn't read {}: {}", path.display(), why),
-        _ => buffer,
-    }
-}
-fn load_diffuse_map(display: &glium::Display, format: image::ImageFormat, file_path: &str) -> glium::texture::SrgbTexture2d {
-    let buffer = load_bytes(file_path);
-    let image = image::load(Cursor::new(buffer),
-                            format).unwrap().to_rgba();
-    let image_dimensions = image.dimensions();
-    let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-    glium::texture::SrgbTexture2d::new(display, raw_image).unwrap()
-}
-fn load_normal_map(display: &glium::Display, format: image::ImageFormat, file_path: &str) -> glium::texture::Texture2d {
-    let buffer = load_bytes(file_path);
-    let image = image::load(Cursor::new(buffer),
-                            format).unwrap().to_rgba();
-    let image_dimensions = image.dimensions();
-    let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-    glium::texture::Texture2d::new(display, raw_image).unwrap()
-}
-
-fn build_program(display: &glium::Display) -> glium::Program {
-    let vertex_shader_src = String::from_utf8_lossy(&include_bytes!("./vertex_shader.glsl")[..]);
-    let fragment_shader_src = String::from_utf8_lossy(&include_bytes!("./fragment_shader.glfl")[..]);
-    glium::Program::from_source(display, &vertex_shader_src, &fragment_shader_src, None).unwrap()
-}
 implement_vertex!(Vertex, position, normal, tex_coords);
+
+
 
 fn main() {
     #[allow(unused_imports)]
@@ -116,24 +84,7 @@ fn main() {
         ];
 
         let view = view_matrix(&[0.5, 0.2, -3.0], &[-0.5, -0.2, 3.0], &[0.0, 1.0, 0.0]);
-
-        let perspective = {
-            let (width, height) = target.get_dimensions();
-            let aspect_ratio = height as f32 / width as f32;
-
-            let fov: f32 = 3.141592 / 3.0;
-            let zfar = 1024.0;
-            let znear = 0.1;
-
-            let f = 1.0 / (fov / 2.0).tan();
-
-            [
-                [f *   aspect_ratio   ,    0.0,              0.0              ,   0.0],
-                [         0.0         ,     f ,              0.0              ,   0.0],
-                [         0.0         ,    0.0,  (zfar+znear)/(zfar-znear)    ,   1.0],
-                [         0.0         ,    0.0, -(2.0*zfar*znear)/(zfar-znear),   0.0],
-            ]
-        };
+        let perspective = perspective_matrix(&target);
 
         let light = [1.4, 0.4, 0.7f32];
 
@@ -156,8 +107,67 @@ fn main() {
     });
 }
 
-// helper function, to be with model and drawing code
+// helper functions
 
+// load files as vector of bytes
+fn load_bytes(file_path: &str) -> Vec<u8> {
+    let path = Path::new(file_path);
+    let mut file = match File::open(&path) {
+        Err(why) => panic!("Couldn't open {}: {}", path.display(), why),
+        Ok(file) => file,
+    };
+    let mut buffer = Vec::new();
+    match file.read_to_end(&mut buffer) {
+        Err(why) => panic!("Couldn't read {}: {}", path.display(), why),
+        _ => buffer,
+    }
+}
+// convert bytes to diffuse texture
+fn load_diffuse_map(display: &glium::Display, format: image::ImageFormat, file_path: &str) -> glium::texture::SrgbTexture2d {
+    let buffer = load_bytes(file_path);
+    let image = image::load(Cursor::new(buffer),
+                            format).unwrap().to_rgba();
+    let image_dimensions = image.dimensions();
+    let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+    glium::texture::SrgbTexture2d::new(display, raw_image).unwrap()
+}
+//convert bytes to normal texture
+fn load_normal_map(display: &glium::Display, format: image::ImageFormat, file_path: &str) -> glium::texture::Texture2d {
+    let buffer = load_bytes(file_path);
+    let image = image::load(Cursor::new(buffer),
+                            format).unwrap().to_rgba();
+    let image_dimensions = image.dimensions();
+    let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+    glium::texture::Texture2d::new(display, raw_image).unwrap()
+}
+
+// constructs opengl program
+fn build_program(display: &glium::Display) -> glium::Program {
+    let vertex_shader_src = String::from_utf8_lossy(&include_bytes!("./vertex_shader.glsl")[..]);
+    let fragment_shader_src = String::from_utf8_lossy(&include_bytes!("./fragment_shader.glfl")[..]);
+    glium::Program::from_source(display, &vertex_shader_src, &fragment_shader_src, None).unwrap()
+}
+
+//constructs perspective matrix
+fn perspective_matrix(target: &glium::Frame) -> [[f32; 4]; 4] {
+    let (width, height) = target.get_dimensions();
+    let aspect_ratio = height as f32 / width as f32;
+
+    let fov: f32 = 3.141592 / 3.0;
+    let zfar = 1024.0;
+    let znear = 0.1;
+
+    let f = 1.0 / (fov / 2.0).tan();
+
+    [
+        [f *   aspect_ratio   ,    0.0,              0.0              ,   0.0],
+        [         0.0         ,     f ,              0.0              ,   0.0],
+        [         0.0         ,    0.0,  (zfar+znear)/(zfar-znear)    ,   1.0],
+        [         0.0         ,    0.0, -(2.0*zfar*znear)/(zfar-znear),   0.0],
+    ]
+}
+
+//constructs view matrix
 fn view_matrix(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -> [[f32; 4]; 4] {
     let f = {
         let f = direction;
