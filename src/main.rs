@@ -30,28 +30,19 @@ fn main() {
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
-// building model data, pull out
+// building model data, to be pull out
 
-    let shape = glium::vertex::VertexBuffer::new(&display, &[
-            Vertex { position: [-1.0,  1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [0.0, 1.0] },
-            Vertex { position: [ 1.0,  1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [1.0, 1.0] },
-            Vertex { position: [-1.0, -1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [0.0, 0.0] },
-            Vertex { position: [ 1.0, -1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [1.0, 0.0] },
-        ]).unwrap();
+    let vertices = build_vertices(&display);
 
     let diffuse_map = load_diffuse_map(&display, image::ImageFormat::Jpeg, "src/tuto-14-diffuse.jpg");
     let normal_map = load_normal_map(&display, image::ImageFormat::Png, "src/tuto-14-normal.png");
 
     let program = build_program(&display, "src/vertex_shader.glsl", "src/fragment_shader.glfl");
 
-// event loop, leave in
-
     event_loop.run(move |event, _, control_flow| {
         let next_frame_time = std::time::Instant::now() +
             std::time::Duration::from_nanos(16_666_667);
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
-
-// event handling, leave in
 
         match event {
             glutin::event::Event::WindowEvent { event, .. } => match event {
@@ -69,12 +60,10 @@ fn main() {
             _ => return,
         }
 
-// prepare to draw to screen, leave in
-
         let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
 
-// preparing to draw, pull out
+// preparing to draw, to be pull out
 
         let model = [
             [1.0, 0.0, 0.0, 0.0],
@@ -99,7 +88,7 @@ fn main() {
 
 // draw to screen, leave in
 
-        target.draw(&shape, glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip), &program,
+        target.draw(&vertices, glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip), &program,
                     &uniform! { model: model, view: view, perspective: perspective,
                                 u_light: light, diffuse_tex: &diffuse_map, normal_tex: &normal_map },
                     &params).unwrap();
@@ -108,6 +97,15 @@ fn main() {
 }
 
 // helper functions
+
+fn build_vertices(display: &glium::Display) -> glium::VertexBuffer<Vertex> {
+    glium::vertex::VertexBuffer::new(display, &[
+        Vertex { position: [-1.0,  1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [0.0, 1.0] },
+        Vertex { position: [ 1.0,  1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [1.0, 1.0] },
+        Vertex { position: [-1.0, -1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [0.0, 0.0] },
+        Vertex { position: [ 1.0, -1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [1.0, 0.0] },
+    ]).unwrap()
+}
 
 // load files as vector of bytes
 fn load_bytes(file_path: &str) -> Vec<u8> {
