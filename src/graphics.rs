@@ -35,14 +35,29 @@ impl Model {
     }
     /// Draws model to frame
     /// takes   frame as glium::Frame
-    ///         model transformation as [[f32;4]; 4]
+    ///         translation transformation as [[f32;4]; 4]
+    ///         rotation transformation as [[f32;4]; 4]
+    ///         scale transformation as [[f32;4]; 4]
     ///         view transformation as [[f32;4]; 4]
     ///         perspective transformation as [[f32;4]; 4]
     ///         light color as [f32; 3]
     ///         opengl program as glium::Program
-    pub fn draw(&self,target: &mut glium::Frame, model: [[f32;4]; 4], view: [[f32;4]; 4], perspective: [[f32;4]; 4], u_light: [f32; 3], program: &glium::Program, params: &glium::DrawParameters) {
-        target.draw(&self.vertices, glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip), &program, &uniform!{ model: model, view: view, perspective: perspective,
-            u_light: u_light, diffuse_tex: &self.diffuse_map, normal_tex: &self.normal_map}, params).unwrap();
+    pub fn draw(&self,target: &mut glium::Frame, translation: [[f32;4];4], rotation: [[f32;4];4], scaling: [[f32;4];4],
+                view: [[f32;4]; 4], perspective: [[f32;4]; 4], u_light: [f32; 3], program: &glium::Program, params: &glium::DrawParameters) {
+        target.draw(&self.vertices,
+            glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip),
+            &program,
+            &uniform!{
+                translation: translation,
+                rotation: rotation,
+                scaling: scaling,
+                view: view,
+                perspective: perspective,
+                u_light: u_light,
+                diffuse_tex: &self.diffuse_map,
+                normal_tex: &self.normal_map
+            },
+            params).unwrap();
     }
 }
 
