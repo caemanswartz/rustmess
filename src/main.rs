@@ -15,7 +15,7 @@ fn main() {
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
     let tetra = Model::from_files(&display, "assets/tetrahedron.obj", "assets/d4_diffuse_texture.jpg", "assets/d4_normal_map.png");
-    //let icosa = Model::from_files(&display, "assets/icosahedron.obj", "assets/d20_diffuse_texture.jpg", "assets/d20_normal_map.png");
+    let icosa = Model::from_files(&display, "assets/icosahedron.obj", "assets/d20_diffuse_texture.jpg", "assets/d20_normal_map.png");
 
     let program = build_program(&display, "assets/vertex_shader.glsl", "assets/fragment_shader.glfl");
     let mut t: f32 = 0.0;
@@ -25,9 +25,10 @@ fn main() {
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
 
         t += 0.005;
-        if t > 1.0 {
-            t = 0.0
+        if t > 2.0 {
+            t -= 2.0;
         }
+        let r = t * 22.0/7.0;
 
         match event {
             glutin::event::Event::WindowEvent { event, .. } => match event {
@@ -48,7 +49,14 @@ fn main() {
 
         let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
+        /*
         let position0 = [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0f32],
+        ];
+        let position1 = [
             [1.0, 0.0, 0.0, 1.0],
             [0.0, 1.0, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
@@ -61,16 +69,14 @@ fn main() {
             [0.0, 0.0, 0.25, 0.0],
             [0.0, 0.0, 0.0, 1.0f32]
         ];
+*/
 
         let rotation = [
-            [t.cos(), -t.sin(), 0.0, 0.0],
-            [t.sin(), t.cos(), 0.0, 0.0],
+            [r.cos(), -r.sin(), 0.0, 0.0],
+            [r.sin(), r.cos(), 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 1.0f32]
         ];
-
-        // position * rotation * scale
-
         let view = view_matrix(&[0.5, 0.2, -3.0], &[-0.5, -0.2, 3.0], &[0.0, 1.0, 0.0]);
         let perspective = perspective_matrix(&target);
 
@@ -85,8 +91,8 @@ fn main() {
             .. Default::default()
         };
 
-        tetra.draw(&mut target, position0, rotation, scale, view, perspective, light, &program, &params);
-        //icosa.draw(&mut target, position1, rotation, scale, view, perspective, light, &program, &params);
+        tetra.draw(&mut target, [1.0, 0.0, 0.0], rotation, [0.33,0.33,0.33], view, perspective, light, &program, &params);
+        icosa.draw(&mut target, [-1.0, 0.0, 0.0], rotation, [0.25,0.25,0.25], view, perspective, light, &program, &params);
 
         target.finish().unwrap();
     });

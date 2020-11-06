@@ -42,7 +42,7 @@ impl Model {
     ///         perspective transformation as [[f32;4]; 4]
     ///         light color as [f32; 3]
     ///         opengl program as glium::Program
-    pub fn draw(&self,target: &mut glium::Frame, translation: [[f32;4];4], rotation: [[f32;4];4], scaling: [[f32;4];4],
+    pub fn draw(&self,target: &mut glium::Frame, translation: [f32;3], rotation: [[f32;4];4], scaling: [f32;3],
                 view: [[f32;4]; 4], perspective: [[f32;4]; 4], u_light: [f32; 3], program: &glium::Program, params: &glium::DrawParameters) {
         target.draw(&self.vertices,
             glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip),
