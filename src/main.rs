@@ -14,11 +14,8 @@ fn main() {
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
-// onetime data constuction: TODO pull out from main
-
-    let test = Model::from_files(&display, "src/cube.obj", "src/tuto-14-diffuse.jpg", "src/tuto-14-normal.png","src/vertex_shader.glsl", "src/fragment_shader.glfl");
-
-// start of event loop: KEEP
+    let test = Model::from_files(&display, "src/cube.obj", "src/tuto-14-diffuse.jpg", "src/tuto-14-normal.png");
+    let program = build_program(&display, "src/vertex_shader.glsl", "src/fragment_shader.glfl");
 
     event_loop.run(move |event, _, control_flow| {
         let next_frame_time = std::time::Instant::now() +
@@ -44,8 +41,6 @@ fn main() {
         let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
 
-// (re)drawing object params: TODO pull and replace with function calls
-
         let model = [
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
@@ -67,11 +62,8 @@ fn main() {
             .. Default::default()
         };
 
-        test.draw(&mut target, model, view, perspective, light, &params);
+        test.draw(&mut target, model, view, perspective, light, &program, &params);
 
-    //    draw(&mut target, &vertices, &program, &uniform!{ model: model, view: view, perspective: perspective,
-    //         u_light: light, diffuse_tex: &diffuse_map, normal_tex: &normal_map}, &params);
-// draw to screen: KEEP
         target.finish().unwrap();
     });
 }
