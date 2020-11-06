@@ -2,15 +2,15 @@
 extern crate glium;
 
 use std::io::Cursor;
-use glium::{glutin, Surface};
+use glium::{glutin, Surface, uniform};
 use std::{
-    env,
     fs::File,
     io::prelude::*,
     path::Path
 };
-// vertex structure setup
-#[derive(Copy, Clone)]
+
+// vertex devinition
+#[derive(Debug, Copy, Clone)]
 struct Vertex {
     position: [f32; 3],
     normal: [f32; 3],
@@ -18,19 +18,15 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position, normal, tex_coords);
 
-
-
 fn main() {
     #[allow(unused_imports)]
-
-    println!("{}", env::current_dir().unwrap().display());
 
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
-// building model data, to be pull out
+// onetime data constuction: TODO pull out from main
 
     let vertices = build_vertices(&display);
 
@@ -38,6 +34,8 @@ fn main() {
     let normal_map = load_normal_map(&display, image::ImageFormat::Png, "src/tuto-14-normal.png");
 
     let program = build_program(&display, "src/vertex_shader.glsl", "src/fragment_shader.glfl");
+
+// start of event loop: KEEP
 
     event_loop.run(move |event, _, control_flow| {
         let next_frame_time = std::time::Instant::now() +
@@ -63,7 +61,7 @@ fn main() {
         let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
 
-// preparing to draw, to be pull out
+// (re)drawing object params: TODO pull and replace with a single function call
 
         let model = [
             [1.0, 0.0, 0.0, 0.0],
@@ -85,18 +83,19 @@ fn main() {
             },
             .. Default::default()
         };
-
-// draw to screen, leave in
-
-        target.draw(&vertices, glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip), &program,
-                    &uniform! { model: model, view: view, perspective: perspective,
-                                u_light: light, diffuse_tex: &diffuse_map, normal_tex: &normal_map },
-                    &params).unwrap();
+  
+        draw(&mut target, &vertices, &program, &uniform!{ model: model, view: view, perspective: perspective,
+             u_light: light, diffuse_tex: &diffuse_map, normal_tex: &normal_map}, &params);
+// draw to screen: KEEP
         target.finish().unwrap();
     });
 }
 
 // helper functions
+
+fn draw<T: glium::uniforms::Uniforms>(target: &mut glium::Frame, vertices: &glium::VertexBuffer<Vertex>, program: &glium::Program, uniform: &T, params: &glium::DrawParameters) {
+    target.draw(vertices, glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip), program, uniform, params).unwrap();
+}
 
 fn build_vertices(display: &glium::Display) -> glium::VertexBuffer<Vertex> {
     glium::vertex::VertexBuffer::new(display, &[
