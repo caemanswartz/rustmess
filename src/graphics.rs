@@ -1,4 +1,8 @@
 use std::io::Cursor;
+use obj::{
+    load_obj, Obj,
+    TexturedVertex
+};
 use glium::Surface;
 use std::{
     fs::File,
@@ -6,25 +10,16 @@ use std::{
     path::Path
 };
 
-// vertex devinition
-#[derive(Debug, Copy, Clone)]
-pub struct Vertex {
-    position: [f32; 3],
-    normal: [f32; 3],
-    tex_coords: [f32; 2],
-}
-implement_vertex!(Vertex, position, normal, tex_coords);
-
 // model structure for drawing
 #[derive(Debug)]
 pub struct Model {
-    vertices: glium::VertexBuffer<Vertex>,
+    vertices: glium::VertexBuffer<TexturedVertex>,
     diffuse_map: glium::texture::SrgbTexture2d,
     normal_map: glium::texture::Texture2d,
     program: glium::Program
 }
 impl Model {
-    pub fn new(vertices: glium::VertexBuffer<Vertex>, diffuse_map: glium:: texture::SrgbTexture2d, normal_map: glium::texture::Texture2d, program: glium::Program) -> Model {
+    pub fn new(vertices: glium::VertexBuffer<TexturedVertex>, diffuse_map: glium:: texture::SrgbTexture2d, normal_map: glium::texture::Texture2d, program: glium::Program) -> Model {
         Model {
             vertices,
             diffuse_map,
@@ -32,9 +27,9 @@ impl Model {
             program
         }
     }
-    pub fn from_files(display: &glium::Display, _vertices_file_path: &str, diffuse_file_path: &str, normal_file_path: &str, vertex_shader_file_path: &str, fragment_shader_file_path: &str) -> Model {
+    pub fn from_files(display: &glium::Display, object_file_path: &str, diffuse_file_path: &str, normal_file_path: &str, vertex_shader_file_path: &str, fragment_shader_file_path: &str) -> Model {
         Model::new(
-            build_vertices(&display),
+            load_object_file(&display, object_file_path),
             load_diffuse_map(&display, image::ImageFormat::Jpeg, diffuse_file_path),
             load_normal_map(&display, image::ImageFormat::Png, normal_file_path),
             build_program(&display, vertex_shader_file_path, fragment_shader_file_path)
@@ -47,13 +42,10 @@ impl Model {
     }
 }
 
-pub fn build_vertices(display: &glium::Display) -> glium::VertexBuffer<Vertex> {
-    glium::vertex::VertexBuffer::new(display, &[
-        Vertex { position: [-1.0,  1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [0.0, 1.0] },
-        Vertex { position: [ 1.0,  1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [1.0, 1.0] },
-        Vertex { position: [-1.0, -1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [0.0, 0.0] },
-        Vertex { position: [ 1.0, -1.0, 0.0], normal: [0.0, 0.0, -1.0], tex_coords: [1.0, 0.0] },
-    ]).unwrap()
+pub fn load_object_file(display: &glium::Display, object_file_path: &str) -> glium::VertexBuffer<TexturedVertex> {
+    let buffer = load_bytes(object_file_path);
+    let obj: Obj<TexturedVertex> = load_obj(&buffer[..]).unwrap();
+    glium::VertexBuffer::new(display, &obj.vertices).unwrap()
 }
 
 // load files as vector of bytes

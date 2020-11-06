@@ -16,7 +16,7 @@ fn main() {
 
 // onetime data constuction: TODO pull out from main
 
-    let test = Model::from_files(&display, "unusedTODOobjectfiles", "src/tuto-14-diffuse.jpg", "src/tuto-14-normal.png","src/vertex_shader.glsl", "src/fragment_shader.glfl");
+    let test = Model::from_files(&display, "src/cube.obj", "src/tuto-14-diffuse.jpg", "src/tuto-14-normal.png","src/vertex_shader.glsl", "src/fragment_shader.glfl");
 
 // start of event loop: KEEP
 
