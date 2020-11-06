@@ -18,12 +18,29 @@ implement_vertex!(Vertex, position, normal, tex_coords);
 // model structure for drawing
 #[derive(Debug)]
 pub struct Model {
-    pub vertices: glium::VertexBuffer<Vertex>,
-    pub diffuse_map: glium::texture::SrgbTexture2d,
-    pub normal_map: glium::texture::Texture2d,
-    pub program: glium::Program
+    vertices: glium::VertexBuffer<Vertex>,
+    diffuse_map: glium::texture::SrgbTexture2d,
+    normal_map: glium::texture::Texture2d,
+    program: glium::Program
 }
 impl Model {
+    pub fn new(vertices: glium::VertexBuffer<Vertex>, diffuse_map: glium:: texture::SrgbTexture2d, normal_map: glium::texture::Texture2d, program: glium::Program) -> Model {
+        Model {
+            vertices,
+            diffuse_map,
+            normal_map,
+            program
+        }
+    }
+    pub fn from_files(display: &glium::Display, _vertices_file_path: &str, diffuse_file_path: &str, normal_file_path: &str, vertex_shader_file_path: &str, fragment_shader_file_path: &str) -> Model {
+        Model::new(
+            build_vertices(&display),
+            load_diffuse_map(&display, image::ImageFormat::Jpeg, diffuse_file_path),
+            load_normal_map(&display, image::ImageFormat::Png, normal_file_path),
+            build_program(&display, vertex_shader_file_path, fragment_shader_file_path)
+        )
+
+    }
     pub fn draw(&self,target: &mut glium::Frame, model: [[f32;4]; 4], view: [[f32;4]; 4], perspective: [[f32;4]; 4], u_light: [f32; 3], params: &glium::DrawParameters) {
         target.draw(&self.vertices, glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip), &self.program, &uniform!{ model: model, view: view, perspective: perspective,
             u_light: u_light, diffuse_tex: &self.diffuse_map, normal_tex: &self.normal_map}, params).unwrap();

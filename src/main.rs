@@ -16,19 +16,7 @@ fn main() {
 
 // onetime data constuction: TODO pull out from main
 
-    let vertices = build_vertices(&display);
-
-    let diffuse_map = load_diffuse_map(&display, image::ImageFormat::Jpeg, "src/tuto-14-diffuse.jpg");
-    let normal_map = load_normal_map(&display, image::ImageFormat::Png, "src/tuto-14-normal.png");
-
-    let program = build_program(&display, "src/vertex_shader.glsl", "src/fragment_shader.glfl");
-
-    let test = Model {
-        vertices,
-        diffuse_map,
-        normal_map,
-        program
-    };
+    let test = Model::from_files(&display, "unusedTODOobjectfiles", "src/tuto-14-diffuse.jpg", "src/tuto-14-normal.png","src/vertex_shader.glsl", "src/fragment_shader.glfl");
 
 // start of event loop: KEEP
 
