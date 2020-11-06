@@ -33,19 +33,31 @@ impl Model {
         )
 
     }
+    /// Draws model to frame
+    /// takes   frame as glium::Frame
+    ///         model transformation as [[f32;4]; 4]
+    ///         view transformation as [[f32;4]; 4]
+    ///         perspective transformation as [[f32;4]; 4]
+    ///         light color as [f32; 3]
+    ///         opengl program as glium::Program
     pub fn draw(&self,target: &mut glium::Frame, model: [[f32;4]; 4], view: [[f32;4]; 4], perspective: [[f32;4]; 4], u_light: [f32; 3], program: &glium::Program, params: &glium::DrawParameters) {
         target.draw(&self.vertices, glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip), &program, &uniform!{ model: model, view: view, perspective: perspective,
             u_light: u_light, diffuse_tex: &self.diffuse_map, normal_tex: &self.normal_map}, params).unwrap();
     }
 }
 
+/// Constructs vertices from object file
+/// takes   display as glium::Display
+///         file path as str
+/// return object vertices as glium::VertexBuffer<obj::TexturedVertex>
 pub fn load_object_file(display: &glium::Display, object_file_path: &str) -> glium::VertexBuffer<TexturedVertex> {
     let buffer = load_bytes(object_file_path);
     let obj: Obj<TexturedVertex> = load_obj(&buffer[..]).unwrap();
     glium::VertexBuffer::new(display, &obj.vertices).unwrap()
 }
-
-// load files as vector of bytes
+/// Reads in bytes from a file
+/// takes   file path as str
+/// returns file contents as vec<u8>
 pub fn load_bytes(file_path: &str) -> Vec<u8> {
     let path = Path::new(file_path);
     let mut file = match File::open(&path) {
@@ -58,7 +70,11 @@ pub fn load_bytes(file_path: &str) -> Vec<u8> {
         _ => buffer,
     }
 }
-// convert bytes to diffuse texture
+/// Constructs diffues texture map from file
+/// takes   display as glium::Display
+///         image format as image::ImageFormat
+///         file path as str
+/// returns opengl texture as glium::texture::SrgbTexture2d
 pub fn load_diffuse_map(display: &glium::Display, format: image::ImageFormat, file_path: &str) -> glium::texture::SrgbTexture2d {
     let buffer = load_bytes(file_path);
     let image = image::load(Cursor::new(buffer),
@@ -67,7 +83,11 @@ pub fn load_diffuse_map(display: &glium::Display, format: image::ImageFormat, fi
     let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
     glium::texture::SrgbTexture2d::new(display, raw_image).unwrap()
 }
-//convert bytes to normal texture
+/// Constructs normal texture map from file
+/// takes   display as glium::Display
+///         image format as image::ImageFormat
+///         file path as str
+/// returns opengl texture as glium::texture::Texture2d
 pub fn load_normal_map(display: &glium::Display, format: image::ImageFormat, file_path: &str) -> glium::texture::Texture2d {
     let buffer = load_bytes(file_path);
     let image = image::load(Cursor::new(buffer),
@@ -77,7 +97,11 @@ pub fn load_normal_map(display: &glium::Display, format: image::ImageFormat, fil
     glium::texture::Texture2d::new(display, raw_image).unwrap()
 }
 
-// constructs opengl program
+/// Constructs opengl program from shader files
+/// takes   display as glium::Display
+///         vertex file path as a str
+///         fragment file path as a str
+/// returns opengl program as glium::Program
 pub fn build_program(display: &glium::Display, vertex_shader_file_path: &str, fragment_shader_file_path: &str) -> glium::Program {
     let vertex_shader_bytes = load_bytes(vertex_shader_file_path);
     let vertex_shader_src = String::from_utf8_lossy(&vertex_shader_bytes);
@@ -86,7 +110,9 @@ pub fn build_program(display: &glium::Display, vertex_shader_file_path: &str, fr
     glium::Program::from_source(display, &vertex_shader_src, &fragment_shader_src, None).unwrap()
 }
 
-//constructs perspective matrix
+/// Constructs perspective transfromation matrix
+/// takes   drawing surface as glium::Frame
+/// returns perspective transformation as [[f32;4];4]
 pub fn perspective_matrix(target: &glium::Frame) -> [[f32; 4]; 4] {
     let (width, height) = target.get_dimensions();
     let aspect_ratio = height as f32 / width as f32;
@@ -105,7 +131,11 @@ pub fn perspective_matrix(target: &glium::Frame) -> [[f32; 4]; 4] {
     ]
 }
 
-//constructs view matrix
+/// Constructs camera view transformation matrix
+/// takes   position vector as [f32; 3],
+///         direction vector as [f32; 3],
+///         up vector as [f32; 3]
+/// returns veiew transformation as [[f32; 4]; 4]
 pub fn view_matrix(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -> [[f32; 4]; 4] {
     let f = {
         let f = direction;

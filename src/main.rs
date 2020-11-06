@@ -14,8 +14,8 @@ fn main() {
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
-    let test = Model::from_files(&display, "src/cube.obj", "src/tuto-14-diffuse.jpg", "src/tuto-14-normal.png");
-    let program = build_program(&display, "src/vertex_shader.glsl", "src/fragment_shader.glfl");
+    let test = Model::from_files(&display, "assets/cube.obj", "assets/tuto-14-diffuse.jpg", "assets/tuto-14-normal.png");
+    let program = build_program(&display, "assets/vertex_shader.glsl", "assets/fragment_shader.glfl");
 
     event_loop.run(move |event, _, control_flow| {
         let next_frame_time = std::time::Instant::now() +
