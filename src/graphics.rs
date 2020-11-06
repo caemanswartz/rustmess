@@ -15,8 +15,19 @@ pub struct Vertex {
 }
 implement_vertex!(Vertex, position, normal, tex_coords);
 
-pub fn draw<T: glium::uniforms::Uniforms>(target: &mut glium::Frame, vertices: &glium::VertexBuffer<Vertex>, program: &glium::Program, uniform: &T, params: &glium::DrawParameters) {
-    target.draw(vertices, glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip), program, uniform, params).unwrap();
+// model structure for drawing
+#[derive(Debug)]
+pub struct Model {
+    pub vertices: glium::VertexBuffer<Vertex>,
+    pub diffuse_map: glium::texture::SrgbTexture2d,
+    pub normal_map: glium::texture::Texture2d,
+    pub program: glium::Program
+}
+impl Model {
+    pub fn draw(&self,target: &mut glium::Frame, model: [[f32;4]; 4], view: [[f32;4]; 4], perspective: [[f32;4]; 4], u_light: [f32; 3], params: &glium::DrawParameters) {
+        target.draw(&self.vertices, glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip), &self.program, &uniform!{ model: model, view: view, perspective: perspective,
+            u_light: u_light, diffuse_tex: &self.diffuse_map, normal_tex: &self.normal_map}, params).unwrap();
+    }
 }
 
 pub fn build_vertices(display: &glium::Display) -> glium::VertexBuffer<Vertex> {

@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate glium;
 
-use glium::{glutin, Surface, uniform};
+use glium::{glutin, Surface};
 
 mod graphics;
 
@@ -22,6 +22,13 @@ fn main() {
     let normal_map = load_normal_map(&display, image::ImageFormat::Png, "src/tuto-14-normal.png");
 
     let program = build_program(&display, "src/vertex_shader.glsl", "src/fragment_shader.glfl");
+
+    let test = Model {
+        vertices,
+        diffuse_map,
+        normal_map,
+        program
+    };
 
 // start of event loop: KEEP
 
@@ -49,7 +56,7 @@ fn main() {
         let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
 
-// (re)drawing object params: TODO pull and replace with a single function call
+// (re)drawing object params: TODO pull and replace with function calls
 
         let model = [
             [1.0, 0.0, 0.0, 0.0],
@@ -71,9 +78,11 @@ fn main() {
             },
             .. Default::default()
         };
-  
-        draw(&mut target, &vertices, &program, &uniform!{ model: model, view: view, perspective: perspective,
-             u_light: light, diffuse_tex: &diffuse_map, normal_tex: &normal_map}, &params);
+
+        test.draw(&mut target, model, view, perspective, light, &params);
+
+    //    draw(&mut target, &vertices, &program, &uniform!{ model: model, view: view, perspective: perspective,
+    //         u_light: light, diffuse_tex: &diffuse_map, normal_tex: &normal_map}, &params);
 // draw to screen: KEEP
         target.finish().unwrap();
     });
