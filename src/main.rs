@@ -1,13 +1,16 @@
-#[macro_use]
 extern crate glium;
 
 use glium::{glutin, Surface};
 
-mod graphics;
+mod etc;
+mod model;
 
 fn main() {
     #[allow(unused_imports)]
-    use graphics::*;
+    use crate::{
+        etc::*,
+        model::Model
+    };
 
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
@@ -49,27 +52,6 @@ fn main() {
 
         let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
-        /*
-        let position0 = [
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0f32],
-        ];
-        let position1 = [
-            [1.0, 0.0, 0.0, 1.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0f32],
-        ];
-
-        let scale = [
-            [0.25, 0.0, 0.0, 0.0],
-            [0.0, 0.25, 0.0, 0.0],
-            [0.0, 0.0, 0.25, 0.0],
-            [0.0, 0.0, 0.0, 1.0f32]
-        ];
-*/
 
         let rotation = [
             [r.cos(), -r.sin(), 0.0, 0.0],
