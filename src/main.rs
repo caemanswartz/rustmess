@@ -21,17 +21,13 @@ fn main() {
     let icosa = Model::from_files(&display, "assets/icosahedron.obj", "assets/d20_diffuse_texture.jpg", "assets/d20_normal_map.png");
 
     let program = build_program(&display, "assets/vertex_shader.glsl", "assets/fragment_shader.glfl");
-    let mut t: f32 = 0.0;
+    let t = std::time::Instant::now();
     event_loop.run(move |event, _, control_flow| {
+
         let next_frame_time = std::time::Instant::now() +
             std::time::Duration::from_nanos(16_666_667);
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
 
-        t += 0.005;
-        if t > 2.0 {
-            t -= 2.0;
-        }
-        let r = t * 22.0/7.0;
 
         match event {
             glutin::event::Event::WindowEvent { event, .. } => match event {
@@ -49,10 +45,12 @@ fn main() {
             _ => return,
         }
 
-
         let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
-
+        
+        let p = std::time::Instant::now().duration_since(t).as_micros() as f32;
+        let r: f32 = (p / 1_000_000.0);
+        
         let rotation = [
             [r.cos(), -r.sin(), 0.0, 0.0],
             [r.sin(), r.cos(), 0.0, 0.0],
