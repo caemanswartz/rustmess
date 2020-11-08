@@ -24,23 +24,14 @@ pub struct Model {
     normal_map: glium::texture::Texture2d
 }
 impl Model {
-    pub fn new(vertices: VertexBuffer<TexturedVertex>, indices: IndexBuffer<u16>,
-               diffuse_map: glium:: texture::SrgbTexture2d, normal_map: glium::texture::Texture2d) -> Model {
+    fn from_files(display: &glium::Display, object_file_path: &str, diffuse_file_path: &str, normal_file_path: &str) -> Model {
+        let (vertices, indices) = load_object_file(&display, object_file_path);
         Model {
             vertices,
             indices,
-            diffuse_map,
-            normal_map
+            diffuse_map: load_diffuse_map(&display, image::ImageFormat::Jpeg, diffuse_file_path),
+            normal_map: load_normal_map(&display, image::ImageFormat::Png, normal_file_path)
         }
-    }
-    pub fn from_files(display: &glium::Display, object_file_path: &str, diffuse_file_path: &str, normal_file_path: &str) -> Model {
-        let (vertices, indices) = load_object_file(&display, object_file_path);
-        Model::new(
-            vertices,
-            indices,
-            load_diffuse_map(&display, image::ImageFormat::Jpeg, diffuse_file_path),
-            load_normal_map(&display, image::ImageFormat::Png, normal_file_path)
-        )
     }
     pub fn from_file(display: &glium::Display, model_file_path: &str) -> Model {
         let buffer: serde_json::Value = serde_json::from_slice(&load_bytes(model_file_path)).unwrap();
