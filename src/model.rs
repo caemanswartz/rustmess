@@ -1,6 +1,8 @@
 use glium::{
+    IndexBuffer,
     Surface,
-    uniform
+    uniform,
+    VertexBuffer
 };
 use std::io::Cursor;
 use obj::{
@@ -14,24 +16,28 @@ use cgmath::{
 
 use crate::etc::load_bytes;
 
-// model structure for drawing
 #[derive(Debug)]
 pub struct Model {
-    vertices: glium::VertexBuffer<TexturedVertex>,
+    vertices: VertexBuffer<TexturedVertex>,
+    indices: IndexBuffer<u16>,
     diffuse_map: glium::texture::SrgbTexture2d,
-    normal_map: glium::texture::Texture2d,
+    normal_map: glium::texture::Texture2d
 }
 impl Model {
-    pub fn new(vertices: glium::VertexBuffer<TexturedVertex>, diffuse_map: glium:: texture::SrgbTexture2d, normal_map: glium::texture::Texture2d) -> Model {
+    pub fn new(vertices: VertexBuffer<TexturedVertex>, indices: IndexBuffer<u16>,
+               diffuse_map: glium:: texture::SrgbTexture2d, normal_map: glium::texture::Texture2d) -> Model {
         Model {
             vertices,
+            indices,
             diffuse_map,
             normal_map
         }
     }
     pub fn from_files(display: &glium::Display, object_file_path: &str, diffuse_file_path: &str, normal_file_path: &str) -> Model {
+        let (vertices, indices) = load_object_file(&display, object_file_path);
         Model::new(
-            load_object_file(&display, object_file_path),
+            vertices,
+            indices,
             load_diffuse_map(&display, image::ImageFormat::Jpeg, diffuse_file_path),
             load_normal_map(&display, image::ImageFormat::Png, normal_file_path)
         )
@@ -53,7 +59,7 @@ impl Model {
         let m = t * r * s;
         let model: [[f32;4];4] = m.into();
         target.draw(&self.vertices,
-            glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip),
+            &self.indices,
             &program,
             &uniform!{
                 model: model,
@@ -70,10 +76,12 @@ impl Model {
 /// takes   disply as glium::Display
 ///         file path as str
 /// returns vertices as glium::VertexBuffer<obj::TexturedVertex>
-fn load_object_file(display: &glium::Display, object_file_path: &str) -> glium::VertexBuffer<TexturedVertex> {
+fn load_object_file(display: &glium::Display, object_file_path: &str) -> (VertexBuffer<TexturedVertex>, IndexBuffer<u16>) {
     let buffer = load_bytes(object_file_path);
     let obj: Obj<TexturedVertex> = load_obj(&buffer[..]).unwrap();
-    glium::VertexBuffer::new(display, &obj.vertices).unwrap()
+    let vertices = obj.vertex_buffer(display).unwrap();
+    let indices = obj.index_buffer(display).unwrap();
+    (vertices, indices)
 }
 
 /// Constructs diffues texture map from file

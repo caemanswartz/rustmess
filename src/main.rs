@@ -17,7 +17,7 @@ fn main() {
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
-    let tetra = Model::from_files(&display, "assets/tetrahedron.obj", "assets/d4_diffuse_texture.jpg", "assets/d4_normal_map.png");
+    let tetra = Model::from_files(&display, "assets/cube.obj", "assets/CubeTexture.jpg", "assets/Cube.001.png");
     let icosa = Model::from_files(&display, "assets/icosahedron.obj", "assets/d20_diffuse_texture.jpg", "assets/d20_normal_map.png");
 
     let program = build_program(&display, "assets/vertex_shader.glsl", "assets/fragment_shader.glfl");
@@ -68,10 +68,10 @@ fn main() {
         let rotation1: [f32; 4] = cgmath::Quaternion::from(cgmath::Euler {
             x: cgmath::Deg(90.0 + r),
             y: cgmath::Deg(45.0),
-            z: cgmath::Deg(15.0)
+            z: cgmath::Deg(15.0 + r)
         }).into();
         let rotation2: [f32; 4] = cgmath::Quaternion::from(cgmath::Euler {
-            x: cgmath::Deg(90.0),
+            x: cgmath::Deg(90.0 + r),
             y: cgmath::Deg(45.0 + r),
             z: cgmath::Deg(15.0)
         }).into();
