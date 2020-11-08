@@ -48,15 +48,9 @@ fn main() {
         let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
         
-        let p = std::time::Instant::now().duration_since(t).as_micros() as f32;
-        let r: f32 = (p / 1_000_000.0);
+        let p = std::time::Instant::now().duration_since(t).as_millis() as f32;
+        let r: f32 = (p / 100.0) % 360.0;
         
-        let rotation = [
-            [r.cos(), -r.sin(), 0.0, 0.0],
-            [r.sin(), r.cos(), 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0f32]
-        ];
         let view = view_matrix(&[0.5, 0.2, -3.0], &[-0.5, -0.2, 3.0], &[0.0, 1.0, 0.0]);
         let perspective = perspective_matrix(&target);
 
@@ -71,8 +65,19 @@ fn main() {
             .. Default::default()
         };
 
-        tetra.draw(&mut target, [1.0, 0.0, 0.0], rotation, [0.33,0.33,0.33], view, perspective, light, &program, &params);
-        icosa.draw(&mut target, [-1.0, 0.0, 0.0], rotation, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        let rotation1: [f32; 4] = cgmath::Quaternion::from(cgmath::Euler {
+            x: cgmath::Deg(90.0 + r),
+            y: cgmath::Deg(45.0),
+            z: cgmath::Deg(15.0)
+        }).into();
+        let rotation2: [f32; 4] = cgmath::Quaternion::from(cgmath::Euler {
+            x: cgmath::Deg(90.0),
+            y: cgmath::Deg(45.0 + r),
+            z: cgmath::Deg(15.0)
+        }).into();
+
+        tetra.draw(&mut target, [1.0, 0.0, 0.0], rotation1, [0.33,0.33,0.33], view, perspective, light, &program, &params);
+        icosa.draw(&mut target, [-1.0, 0.0, 0.0], rotation2, [0.25,0.25,0.25], view, perspective, light, &program, &params);
 
         target.finish().unwrap();
     });
