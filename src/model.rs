@@ -42,11 +42,17 @@ impl Model {
             load_normal_map(&display, image::ImageFormat::Png, normal_file_path)
         )
     }
+    pub fn from_file(display: &glium::Display, model_file_path: &str) -> Model {
+        let buffer: serde_json::Value = serde_json::from_slice(&load_bytes(model_file_path)).unwrap();
+        Model::from_files(display, &buffer["object_file_path"].to_string().trim_matches('"'),
+                          &buffer["diffuse_file_path"].to_string().trim_matches('"'),
+                          &buffer["normal_file_path"].to_string().trim_matches('"'))
+    }
     /// Draws model to frame
     /// takes   frame as glium::Frame
-    ///         translation transformation as [[f32;4]; 4]
-    ///         rotation transformation as [[f32;4]; 4]
-    ///         scale transformation as [[f32;4]; 4]
+    ///         translation vector as [f32;3]
+    ///         rotation quaternion as [f32;4]]
+    ///         scale vector as [f32;3]
     ///         view transformation as [[f32;4]; 4]
     ///         perspective transformation as [[f32;4]; 4]
     ///         light color as [f32; 3]

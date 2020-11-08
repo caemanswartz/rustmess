@@ -17,7 +17,7 @@ fn main() {
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
-    let tetra = Model::from_files(&display, "assets/cube.obj", "assets/CubeTexture.jpg", "assets/Cube.001.png");
+    let tetra = Model::from_file(&display, "assets/icosahedron.json");
     let icosa = Model::from_files(&display, "assets/icosahedron.obj", "assets/d20_diffuse_texture.jpg", "assets/d20_normal_map.png");
 
     let program = build_program(&display, "assets/vertex_shader.glsl", "assets/fragment_shader.glfl");

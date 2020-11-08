@@ -1,0 +1,5 @@
+{
+    "object_file_path": "assets/icosahedron.obj",
+    "diffuse_file_path": "assets/d20_diffuse_texture.jpg",
+    "normal_file_path": "assets/d20_normal_map.png"
+}
