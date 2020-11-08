@@ -17,8 +17,12 @@ fn main() {
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
-    let tetra = Model::from_file(&display, "assets/icosahedron.json");
-    let icosa = Model::from_files(&display, "assets/icosahedron.obj", "assets/d20_diffuse_texture.jpg", "assets/d20_normal_map.png");
+    let tetr = Model::from_file(&display, "assets/tetrahedron.json");
+    let hexa = Model::from_file(&display, "assets/hexahedron.json");
+    let octa = Model::from_file(&display, "assets/octahedron.json");
+    let trap = Model::from_file(&display, "assets/trapezohedron.json");
+    let dode = Model::from_file(&display, "assets/dodecahedron.json");
+    let icos = Model::from_file(&display, "assets/icosahedron.json");
 
     let program = build_program(&display, "assets/vertex_shader.glsl", "assets/fragment_shader.glfl");
     let t = std::time::Instant::now();
@@ -76,8 +80,12 @@ fn main() {
             z: cgmath::Deg(15.0)
         }).into();
 
-        tetra.draw(&mut target, [1.0, 0.0, 0.0], rotation1, [0.33,0.33,0.33], view, perspective, light, &program, &params);
-        icosa.draw(&mut target, [-1.0, 0.0, 0.0], rotation2, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        tetr.draw(&mut target, [1.0, 0.0, 0.0], rotation1, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        hexa.draw(&mut target, [1.0, 1.0, 0.0], rotation2, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        octa.draw(&mut target, [0.0, 1.0, 0.0], rotation1, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        trap.draw(&mut target, [0.0, 1.0, 1.0], rotation2, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        dode.draw(&mut target, [0.0, -1.0, 0.0], rotation1, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        icos.draw(&mut target, [-1.0, 0.0, 0.0], rotation2, [0.25,0.25,0.25], view, perspective, light, &program, &params);
 
         target.finish().unwrap();
     });
