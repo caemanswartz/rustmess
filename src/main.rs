@@ -1,6 +1,7 @@
 extern crate glium;
 
 use glium::{glutin, Surface};
+use cgmath;
 
 mod etc;
 mod album;
@@ -28,6 +29,12 @@ fn main() {
 
     let scale = [0.25, 0.25, 0.25];
     let orientation = [0.0, 0.0, 0.0, 1.0];
+    let orientation_by: [f32; 4] = cgmath::Quaternion::from(
+        cgmath::Euler{
+            x: cgmath::Deg(1.2),
+            y: cgmath::Deg(0.6),
+            z: cgmath::Deg(0.0)
+        }).into();
     let mut actors = [
         Actor::new([0.0, 0.0, 0.0], orientation, scale,"tetrahedron".to_string(),"d4texture".to_string()),
         Actor::new([1.0, 1.0, 0.0], orientation, scale,"hexahedron".to_string(),"d6texture".to_string()),
@@ -74,8 +81,9 @@ fn main() {
                     actor.position_to([1.0, position[1], position[2]]);
                 }
                 else {
-                    actor.position_by([-0.01, 0.0,0.0]);
+                    actor.position_by([-0.01, 0.0, 0.0]);
                 }
+                actor.orientation_by(orientation_by);
             };
             lag -= MS_PER_UPDATE;
         }
