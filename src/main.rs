@@ -3,29 +3,24 @@ extern crate glium;
 use glium::{glutin, Surface};
 
 mod etc;
-mod model;
+mod album;
 
 fn main() {
     #[allow(unused_imports)]
     use crate::{
         etc::*,
-        model::Album
+        album::Album
     };
 
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
-/*
-    let tetr = Model::from_file(&display, "assets/tetrahedron.json");
-    let hexa = Model::from_file(&display, "assets/hexahedron.json");
-    let octa = Model::from_file(&display, "assets/octahedron.json");
-    let trap = Model::from_file(&display, "assets/trapezohedron.json");
-    let dode = Model::from_file(&display, "assets/dodecahedron.json");
-    let icos = Model::from_file(&display, "assets/icosahedron.json");
-*/
+
+    let load_time = std::time::Instant::now();
     let mut album = Album::new();
     album.load_path(&display, "assets");
+    println!("Loaded assets folder in {:?}", load_time.elapsed());
 
     let program = build_program(&display, "assets/vertex_shader.glsl", "assets/fragment_shader.glfl");
     let t = std::time::Instant::now();
