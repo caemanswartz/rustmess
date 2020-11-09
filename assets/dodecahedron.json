@@ -1,5 +1,7 @@
 {
+    "object_key": "dodecahedron",
     "object_file_path": "assets/dodecahedron.obj",
+    "texture_key": "d12texture",
     "diffuse_file_path": "objects/d12_Texture.jpg",
     "normal_file_path": "objects/d12_Texture_Map.png"
 }

@@ -1,5 +1,7 @@
 {
+    "object_key": "octahedron",
     "object_file_path": "assets/octahedron.obj",
+    "texture_key": "d8texture",
     "diffuse_file_path": "objects/d8_Texture.jpg",
     "normal_file_path": "objects/d8_Texture_Map.png"
 }

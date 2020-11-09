@@ -4,7 +4,12 @@ use glium::{
     uniform,
     VertexBuffer
 };
-use std::io::Cursor;
+use std::{
+    collections::HashMap,
+    fs,
+    io::Cursor,
+    string::String
+};
 use obj::{
     load_obj, Obj,
     TexturedVertex
@@ -17,93 +22,141 @@ use cgmath::{
 use crate::etc::load_bytes;
 
 #[derive(Debug)]
-pub struct Model {
-    vertices: VertexBuffer<TexturedVertex>,
-    indices: IndexBuffer<u16>,
-    diffuse_map: glium::texture::SrgbTexture2d,
-    normal_map: glium::texture::Texture2d
+pub struct AlbumTexture {
+    diffuse_tex: glium::texture::SrgbTexture2d,
+    normals_map: glium::texture::Texture2d
 }
-impl Model {
-    fn from_files(display: &glium::Display, object_file_path: &str, diffuse_file_path: &str, normal_file_path: &str) -> Model {
-        let (vertices, indices) = load_object_file(&display, object_file_path);
-        Model {
-            vertices,
-            indices,
-            diffuse_map: load_diffuse_map(&display, image::ImageFormat::Jpeg, diffuse_file_path),
-            normal_map: load_normal_map(&display, image::ImageFormat::Png, normal_file_path)
+impl AlbumTexture {
+    pub fn from_path(display: &glium::Display, diffuse_file_path: &str, normal_file_path: &str) -> AlbumTexture {
+        AlbumTexture {
+            diffuse_tex: AlbumTexture::load_diffuse_tex(display, diffuse_file_path),
+            normals_map: AlbumTexture::load_normals_map(display, normal_file_path)
         }
     }
-    pub fn from_file(display: &glium::Display, model_file_path: &str) -> Model {
-        let buffer: serde_json::Value = serde_json::from_slice(&load_bytes(model_file_path)).unwrap();
-        Model::from_files(display, &buffer["object_file_path"].to_string().trim_matches('"'),
-                          &buffer["diffuse_file_path"].to_string().trim_matches('"'),
-                          &buffer["normal_file_path"].to_string().trim_matches('"'))
+    fn get_image_format(file_path: &str) -> image::ImageFormat {
+        let path = std::path::Path::new(file_path);
+        let extension = path.extension().and_then(std::ffi::OsStr::to_str);
+        match extension.unwrap() {
+            "png" => image::ImageFormat::Png,
+            "jpg" => image::ImageFormat::Jpeg,
+            "bmp" => image::ImageFormat::Bmp,
+            "gif" => image::ImageFormat::Gif,
+            _ => panic!("Could not recognize the image format of {}", path.display())
+        }
     }
-    /// Draws model to frame
-    /// takes   frame as glium::Frame
-    ///         translation vector as [f32;3]
-    ///         rotation quaternion as [f32;4]]
-    ///         scale vector as [f32;3]
-    ///         view transformation as [[f32;4]; 4]
-    ///         perspective transformation as [[f32;4]; 4]
-    ///         light color as [f32; 3]
-    ///         opengl program as glium::Program
-    pub fn draw(&self,target: &mut glium::Frame, translation: [f32;3], rotation: [f32;4], scaling: [f32;3],
-                view: [[f32;4]; 4], perspective: [[f32;4]; 4], u_light: [f32; 3], program: &glium::Program, params: &glium::DrawParameters) {
-        let t = Matrix4::from_translation(cgmath::Vector3::new(translation[0],translation[1],translation[2]));
-        let r = Matrix4::from(Quaternion::from(rotation));
-        let s = Matrix4::from_nonuniform_scale(scaling[0], scaling[1], scaling[2]);
-        let m = t * r * s;
-        let model: [[f32;4];4] = m.into();
-        target.draw(&self.vertices,
-            &self.indices,
-            &program,
-            &uniform!{
-                model: model,
-                view: view,
-                perspective: perspective,
-                u_light: u_light,
-                diffuse_tex: &self.diffuse_map,
-                normal_tex: &self.normal_map
-            },
-            params).unwrap();
+    fn load_diffuse_tex(display: &glium::Display, file_path: &str) -> glium::texture::SrgbTexture2d {
+        let format = AlbumTexture::get_image_format(file_path);
+        let buffer = load_bytes(file_path);
+        let image = image::load(Cursor::new(buffer),
+                                format).unwrap().to_rgba();
+        let image_dimensions = image.dimensions();
+        let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        glium::texture::SrgbTexture2d::new(display, raw_image).unwrap()
     }
-}
-/// Constructs vector of vertices inlcuding normals and uv
-/// takes   disply as glium::Display
-///         file path as str
-/// returns vertices as glium::VertexBuffer<obj::TexturedVertex>
-fn load_object_file(display: &glium::Display, object_file_path: &str) -> (VertexBuffer<TexturedVertex>, IndexBuffer<u16>) {
-    let buffer = load_bytes(object_file_path);
-    let obj: Obj<TexturedVertex> = load_obj(&buffer[..]).unwrap();
-    let vertices = obj.vertex_buffer(display).unwrap();
-    let indices = obj.index_buffer(display).unwrap();
-    (vertices, indices)
+    fn load_normals_map(display: &glium::Display, file_path: &str) -> glium::texture::Texture2d {
+        let format = AlbumTexture::get_image_format(file_path);
+        let buffer = load_bytes(file_path);
+        let image = image::load(Cursor::new(buffer),
+                                format).unwrap().to_rgba();
+        let image_dimensions = image.dimensions();
+        let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        glium::texture::Texture2d::new(display, raw_image).unwrap()
+    }
 }
 
-/// Constructs diffues texture map from file
-/// takes   display as glium::Display
-///         image format as image::ImageFormat
-///         file path as str
-/// returns opengl texture as glium::texture::SrgbTexture2d
-fn load_diffuse_map(display: &glium::Display, format: image::ImageFormat, file_path: &str) -> glium::texture::SrgbTexture2d {
-    let buffer = load_bytes(file_path);
-    let image = image::load(Cursor::new(buffer),
-                            format).unwrap().to_rgba();
-    let image_dimensions = image.dimensions();
-    let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-    glium::texture::SrgbTexture2d::new(display, raw_image).unwrap()
+#[derive(Debug)]
+pub struct AlbumObject {
+    vertices: VertexBuffer<TexturedVertex>,
+    indices: IndexBuffer<u16>
 }
-/// Constructs normal texture map from file
-/// takes   display as glium::Display
-///         image format as image::ImageFormat
-///         file path as str
-/// returns opengl texture as glium::texture::Texture2d
-fn load_normal_map(display: &glium::Display, format: image::ImageFormat, file_path: &str) -> glium::texture::Texture2d {
-    let buffer = load_bytes(file_path);
-    let image = image::load(Cursor::new(buffer),
-                            format).unwrap().to_rgba();
-    let image_dimensions = image.dimensions();
-    let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-    glium::texture::Texture2d::new(display, raw_image).unwrap()
+impl AlbumObject {
+    pub fn from_path(display: &glium::Display, object_file_path: &str) -> AlbumObject {
+        let (vertices, indices) = AlbumObject::load_object_file(&display, object_file_path);
+        AlbumObject {
+            vertices,
+            indices
+        }
+    }
+
+    fn load_object_file(display: &glium::Display, object_file_path: &str) -> (VertexBuffer<TexturedVertex>, IndexBuffer<u16>) {
+        let buffer = load_bytes(object_file_path);
+        let obj: Obj<TexturedVertex> = load_obj(&buffer[..]).unwrap();
+        let vertices = obj.vertex_buffer(display).unwrap();
+        let indices = obj.index_buffer(display).unwrap();
+        (vertices, indices)
+    }
+}
+
+#[derive(Debug)]
+pub struct Album {
+    obj_dict: HashMap<String, AlbumObject>,
+    tex_dict: HashMap<String, AlbumTexture>
+}
+
+impl Album {
+    pub fn new() -> Album {
+        Album {
+            obj_dict: HashMap::new(),
+            tex_dict: HashMap::new()
+        }
+    }
+    pub fn load_json(&mut self, display: &glium::Display, json_file_path: &str) {
+        let buffer: serde_json::Value = serde_json::from_slice(&load_bytes(json_file_path)).unwrap();
+        self.obj_dict.insert(
+            buffer["object_key"].to_string().trim_matches('"').to_string(),
+            AlbumObject::from_path(display, buffer["object_file_path"].to_string().trim_matches('"'))
+        );
+        self.tex_dict.insert(
+            buffer["texture_key"].to_string().trim_matches('"').to_string(),
+            AlbumTexture::from_path(display, buffer["diffuse_file_path"].to_string().trim_matches('"'),
+                                    buffer["normal_file_path"].to_string().trim_matches('"'))
+        );
+    }
+    pub fn load_path(&mut self, display:&glium::Display, file_path: &str) {
+        let paths = fs::read_dir(file_path).unwrap();
+        for path in paths {
+            let file = path.unwrap().path();
+            let extension = file.extension().and_then(std::ffi::OsStr::to_str).unwrap();
+            match extension {
+                "json" => self.load_json(display, file.to_str().unwrap()),
+                _=> continue
+            }
+        }
+
+    }
+    pub fn get_obj(&self, obj_key: &str) -> &AlbumObject {
+        match self.obj_dict.get(obj_key) {
+            Some(object) => object,
+            None => panic!("Could not find object key '{}'", obj_key)
+        }
+    }
+    pub fn get_tex(&self, tex_key: &str) -> &AlbumTexture {
+        match self.tex_dict.get(tex_key) {
+            Some(texture) => texture,
+            None => panic!("Could not find texture key '{}'", tex_key)
+        }
+    }
+
+    pub fn draw(&self, target: &mut glium::Frame, object_key: &str, texture_key: &str, translation: [f32;3], rotation: [f32;4], scaling: [f32;3],
+            view: [[f32;4]; 4], perspective: [[f32;4]; 4], u_light: [f32; 3], program: &glium::Program, params: &glium::DrawParameters) {
+    let t = Matrix4::from_translation(cgmath::Vector3::new(translation[0],translation[1],translation[2]));
+    let r = Matrix4::from(Quaternion::from(rotation));
+    let s = Matrix4::from_nonuniform_scale(-scaling[0], scaling[1], scaling[2]);
+    let m = t * r * s;
+    let model: [[f32;4];4] = m.into();
+    let object = self.get_obj(object_key);
+    let texture = self.get_tex(texture_key);
+    target.draw(&object.vertices,
+        &object.indices,
+        &program,
+        &uniform!{
+            model: model,
+            view: view,
+            perspective: perspective,
+            u_light: u_light,
+            diffuse_tex: &texture.diffuse_tex,
+            normals_tex: &texture.normals_map
+        },
+        params).unwrap();
+    }
 }

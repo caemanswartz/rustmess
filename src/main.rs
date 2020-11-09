@@ -9,20 +9,23 @@ fn main() {
     #[allow(unused_imports)]
     use crate::{
         etc::*,
-        model::Model
+        model::Album
     };
 
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
-
+/*
     let tetr = Model::from_file(&display, "assets/tetrahedron.json");
     let hexa = Model::from_file(&display, "assets/hexahedron.json");
     let octa = Model::from_file(&display, "assets/octahedron.json");
     let trap = Model::from_file(&display, "assets/trapezohedron.json");
     let dode = Model::from_file(&display, "assets/dodecahedron.json");
     let icos = Model::from_file(&display, "assets/icosahedron.json");
+*/
+    let mut album = Album::new();
+    album.load_path(&display, "assets");
 
     let program = build_program(&display, "assets/vertex_shader.glsl", "assets/fragment_shader.glfl");
     let t = std::time::Instant::now();
@@ -69,23 +72,18 @@ fn main() {
             .. Default::default()
         };
 
-        let rotation1: [f32; 4] = cgmath::Quaternion::from(cgmath::Euler {
+        let rotation: [f32; 4] = cgmath::Quaternion::from(cgmath::Euler {
             x: cgmath::Deg(90.0 + r),
             y: cgmath::Deg(45.0),
             z: cgmath::Deg(15.0 + r)
         }).into();
-        let rotation2: [f32; 4] = cgmath::Quaternion::from(cgmath::Euler {
-            x: cgmath::Deg(90.0 + r),
-            y: cgmath::Deg(45.0 + r),
-            z: cgmath::Deg(15.0)
-        }).into();
 
-        tetr.draw(&mut target, [1.0, 0.0, 0.0], rotation1, [0.25,0.25,0.25], view, perspective, light, &program, &params);
-        hexa.draw(&mut target, [1.0, 1.0, 0.0], rotation2, [0.25,0.25,0.25], view, perspective, light, &program, &params);
-        octa.draw(&mut target, [0.0, 1.0, 0.0], rotation1, [0.25,0.25,0.25], view, perspective, light, &program, &params);
-        trap.draw(&mut target, [0.0, 1.0, 1.0], rotation2, [0.25,0.25,0.25], view, perspective, light, &program, &params);
-        dode.draw(&mut target, [0.0, -1.0, 0.0], rotation1, [0.25,0.25,0.25], view, perspective, light, &program, &params);
-        icos.draw(&mut target, [-1.0, 0.0, 0.0], rotation2, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        album.draw(&mut target, "tetrahedron", "d4texture", [1.0, 0.0, 0.0], rotation, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        album.draw(&mut target, "hexahedron", "d6texture", [1.0, 1.0, 0.0], rotation, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        album.draw(&mut target, "octahedron", "d8texture", [0.0, 1.0, 0.0], rotation, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        album.draw(&mut target, "trapezohedron", "d10texture", [0.0, 1.0, 1.0], rotation, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        album.draw(&mut target, "dodecahedron", "d12texture", [0.0, -1.0, 0.0], rotation, [0.25,0.25,0.25], view, perspective, light, &program, &params);
+        album.draw(&mut target, "icosahedron", "d20texture", [-1.0, 0.0, 0.0], rotation, [0.25,0.25,0.25], view, perspective, light, &program, &params);
 
         target.finish().unwrap();
     });

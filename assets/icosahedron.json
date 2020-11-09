@@ -1,5 +1,7 @@
 {
+    "object_key": "icosahedron",
     "object_file_path": "assets/icosahedron.obj",
+    "texture_key": "d20texture",
     "diffuse_file_path": "objects/d20_Texture.jpg",
     "normal_file_path": "objects/d20_Texture_Map.png"
 }
