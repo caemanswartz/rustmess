@@ -127,13 +127,13 @@ impl Album {
     pub fn get_obj(&self, obj_key: &str) -> &AlbumObject {
         match self.obj_dict.get(obj_key) {
             Some(object) => object,
-            None => panic!("Could not find object key '{}'", obj_key)
+            None => panic!("Could not find object key '{}' in album", obj_key)
         }
     }
     pub fn get_tex(&self, tex_key: &str) -> &AlbumTexture {
         match self.tex_dict.get(tex_key) {
             Some(texture) => texture,
-            None => panic!("Could not find texture key '{}'", tex_key)
+            None => panic!("Could not find texture key '{}' in album", tex_key)
         }
     }
 
