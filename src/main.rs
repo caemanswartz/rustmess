@@ -4,8 +4,9 @@ use glium::{glutin, Surface};
 use cgmath;
 
 mod etc;
-mod album;
-mod actor;
+mod body;
+mod model;
+mod gfx;
 
 const MS_PER_UPDATE: u32 = 16;
 
@@ -13,8 +14,9 @@ fn main() {
     #[allow(unused_imports)]
     use crate::{
         etc::*,
-        actor::Actor,
-        album::Album
+        body::Body,
+        model::Model,
+        gfx::GraphicLibrary
     };
 
     let event_loop = glutin::event_loop::EventLoop::new();
@@ -23,25 +25,27 @@ fn main() {
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
     let load_time = std::time::Instant::now();
-    let mut album = Album::new();
-    album.load_path(&display, "assets");
+    let mut library = GraphicLibrary::new();
+    library.load_path(&display, "assets");
     println!("Loaded assets folder in {:?}", load_time.elapsed());
 
     let scale = [0.25, 0.25, 0.25];
     let orientation = [0.0, 0.0, 0.0, 1.0];
+    /*
     let orientation_by: [f32; 4] = cgmath::Quaternion::from(
         cgmath::Euler{
             x: cgmath::Deg(1.2),
             y: cgmath::Deg(0.6),
             z: cgmath::Deg(0.0)
         }).into();
-    let mut actors = [
-        Actor::new([0.0, 0.0, 0.0], orientation, scale,"tetrahedron".to_string(),"d4texture".to_string()),
-        Actor::new([1.0, 1.0, 0.0], orientation, scale,"hexahedron".to_string(),"d6texture".to_string()),
-        Actor::new([0.0, 1.0, 0.0], orientation, scale,"octahedron".to_string(),"d8texture".to_string()),
-        Actor::new([0.0, 1.0, 1.0], orientation, scale,"trapezohedron".to_string(),"d10texture".to_string()),
-        Actor::new([0.0, -1.0, 0.0], orientation, scale,"dodecahedron".to_string(),"d12texture".to_string()),
-        Actor::new([-1.0, 0.0, 0.0], orientation, scale,"icosahedron".to_string(),"d20texture".to_string())
+    */
+    let mut bodies = [
+        Body::new([0.0, 0.0, 0.0], [1.0,0.0,0.0], orientation, Model::new(scale,"tetrahedron".to_string(),"d4texture".to_string())),
+        Body::new([1.0, 1.0, 0.0], [1.0,1.0,0.0], orientation, Model::new(scale,"hexahedron".to_string(),"d6texture".to_string())),
+        Body::new([0.0, 1.0, 0.0], [0.0,1.0,0.0], orientation, Model::new(scale,"octahedron".to_string(),"d8texture".to_string())),
+        Body::new([0.0, 1.0, 1.0], [0.0,1.0,1.0], orientation, Model::new(scale,"trapezohedron".to_string(),"d10texture".to_string())),
+        Body::new([0.0, -1.0, 0.0], [0.0,0.0,1.0], orientation, Model::new(scale,"dodecahedron".to_string(),"d12texture".to_string())),
+        Body::new([-1.0, 0.0, 0.0], [0.0,0.0,0.0], orientation, Model::new(scale,"icosahedron".to_string(),"d20texture".to_string()))
     ];
 
     let program = build_program(&display, "assets/vertex_shader.glsl", "assets/fragment_shader.glfl");
@@ -75,15 +79,14 @@ fn main() {
         }
 // update
         while lag >= MS_PER_UPDATE {
-            for actor in &mut actors {
-                let position = actor.get_position();
-                if position[0] < -1.0 {
-                    actor.position_to([1.0, position[1], position[2]]);
+            for body in &mut bodies {
+                let position = body.get_position();
+                if position[0] < -1.0 || position[0] > 1.0 
+                   || position[1] < -1.0 || position[1] > 1.0
+                   || position[2] < -1.0 || position[2] > 1.0 {
+                    body.flip_velocity();
                 }
-                else {
-                    actor.position_by([-0.01, 0.0, 0.0]);
-                }
-                actor.orientation_by(orientation_by);
+                body.apply_time_step(MS_PER_UPDATE as f32 / 1000.0);
             };
             lag -= MS_PER_UPDATE;
         }
@@ -106,8 +109,8 @@ fn main() {
             .. Default::default()
         };
 
-        for actor in &mut actors {
-            actor.draw(&mut target, &album, view, perspective, light, &program, &params);
+        for body in &mut bodies {
+            body.draw(&mut target, &library, view, perspective, light, &program, &params);
         };
 
         target.finish().unwrap();
