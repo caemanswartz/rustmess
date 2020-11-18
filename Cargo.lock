@@ -1270,6 +1270,7 @@ dependencies = [
  "glium",
  "image",
  "obj-rs",
+ "rand",
  "serde_json",
 ]
 

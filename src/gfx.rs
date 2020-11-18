@@ -100,6 +100,11 @@ impl GraphicLibrary {
             tex_dict: HashMap::new()
         }
     }
+    pub fn load(display: &glium::Display, file_path: &str) -> GraphicLibrary {
+        let mut library = GraphicLibrary::new();
+        library.load_path(display, file_path);
+        library
+    }
     pub fn load_json(&mut self, display: &glium::Display, json_file_path: &str) {
         let buffer: serde_json::Value = serde_json::from_slice(&load_bytes(json_file_path)).unwrap();
         self.obj_dict.insert(
@@ -158,5 +163,31 @@ impl GraphicLibrary {
             normals_tex: &texture.normals_map
         },
         params).unwrap();
+    }
+}
+
+#[derive(Debug,Clone)]
+pub struct Graphic {
+    scale: [f32; 3],
+    object_key: String,
+    texture_key: String
+}
+#[allow(dead_code)]
+impl Graphic {
+    pub fn new(
+        scale: [f32; 3],
+        object_key: String,
+        texture_key: String
+    ) -> Graphic {
+        Graphic {
+            scale,
+            object_key,
+            texture_key
+        }
+    }
+    pub fn draw(&self, target: &mut glium::Frame, library: &GraphicLibrary, position: [f32;3], orientation: [f32;4], view: [[f32;4]; 4], perspective: [[f32;4]; 4],
+                u_light: [f32; 3],program: &glium::Program, params: &glium::DrawParameters) {
+        library.draw(target, &self.object_key, &self.texture_key, position, orientation, self.scale,
+                   view, perspective, u_light, program, params);
     }
 }
