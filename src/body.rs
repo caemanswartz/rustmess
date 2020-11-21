@@ -2,13 +2,27 @@ use crate::gfx::{
     Graphic,
     GraphicLibrary
 };
+use navmesh::{
+    NavQuery,
+    NavPathMode,
+    NavVec3,
+    NavMesh
+};
+
+#[derive(Debug,Clone,Copy)]
+pub enum WaypointState {
+    IncrementWaypoint,
+    WaitingForPath,
+    ReachedGoal
+}
 
 #[derive(Debug,Clone)]
 pub struct Body {
     mass: f32,
-    target: [f32; 3],
-    position: [f32; 3],
-    velocity: [f32; 3],
+    waypoint: Vec<NavVec3>,
+    waypoint_state: WaypointState,
+    position: NavVec3,
+    velocity: NavVec3,
     orientation: [f32; 4],
     model: Graphic
 }
@@ -16,7 +30,6 @@ pub struct Body {
 impl Body {
     pub fn new(
         mass: f32,
-        target: [f32; 3],
         position: [f32; 3],
         velocity: [f32; 3],
         orientation: [f32; 4],
@@ -24,80 +37,94 @@ impl Body {
     ) -> Body {
         Body {
             mass,
-            target,
-            position,
-            velocity,
+            waypoint: Vec::new(),
+            waypoint_state: WaypointState::ReachedGoal,
+            position: position.into(),
+            velocity: velocity.into(),
             orientation,
             model
         }
     }
-    pub fn get_position(&self) -> [f32; 3] {
-        self.position
-    }
-    pub fn get_target(&self) -> [f32;3] {
-        self.target
-    }
-    pub fn set_target(&mut self, target: [f32; 3]) {
-        self.target = target;
-    }
-    pub fn apply_time_step(&mut self, time_step: f32) {
-        self.move_towards_target(time_step);
-        self.apply_velocity(time_step);
-    }
-    fn apply_velocity(&mut self, time_step: f32) {
-        self.position[0] += self.velocity[0] * time_step;
-        self.position[1] += self.velocity[1] * time_step;
-        self.position[2] += self.velocity[2] * time_step;
-    }
-    fn apply_acceleration(&mut self, acceleration: [f32;3], time_step: f32) {
-        self.velocity[0] += acceleration[0] * time_step;
-        self.velocity[1] += acceleration[1] * time_step;
-        self.velocity[2] += acceleration[2] * time_step;
-    }
-    fn move_towards_target(&mut self, time_step: f32) {
-        if self.get_distance(self.target) < 0.1 {
-            self.apply_acceleration(
-                [
-                    -self.velocity[0],
-                    -self.velocity[1],
-                    -self.velocity[2]
-                ],
-                time_step);
-        } else {
-            self.apply_acceleration(self.towards_target(), time_step);
-        }
-    }
-    fn towards_stop(&self) -> [f32; 3] {
-        let x = self.velocity[0];
-        let y = self.velocity[1];
-        let z = self.velocity[2];
-        let l = (x * x + y * y + z * z).sqrt();
-        [
-            -(x / l),
-            -(y / l),
-            -(z / l)
-        ]
-    }
-    fn towards_target(&self) -> [f32; 3] {
-        let x = self.target[0] - self.position[0]; 
-        let y = self.target[1] - self.position[1];
-        let z = self.target[2] - self.position[2];
-        let l = (x * x + y * y + z * z).sqrt();
-        [
-            x / l,
-            y / l,
-            z / l
-        ]
-    }
-    fn get_distance(&self, target: [f32; 3]) -> f32 {
-        let x = self.position[0] - target[0];
-        let y = self.position[1] - target[1];
-        let z = self.position[2] - target[2];
-        (x * x + y * y + z * z).sqrt()
-
-    }
     pub fn draw(&self, target: &mut glium::Frame, library: &GraphicLibrary, view: [[f32;4]; 4], perspective: [[f32;4]; 4],
         u_light: [f32; 3],program: &glium::Program, params: &glium::DrawParameters) {
-        self.model.draw(target, library, self.position, self.orientation, view, perspective, u_light, program, params);
+        self.model.draw(target, library,
+            [
+                self.position.x,
+                self.position.y,
+                self.position.z
+            ],
+            self.orientation, view, perspective, u_light, program, params);
     }
+
+    pub fn set_waypoint(&mut self,navmesh: &NavMesh, waypoint: NavVec3) {
+        self.waypoint = navmesh.find_path(
+            self.position,
+            waypoint,
+            NavQuery::Accuracy,
+            NavPathMode::MidPoints
+        ).unwrap();
+        self.waypoint_state = WaypointState::IncrementWaypoint;
+    }
+    pub fn clr_waypoint(&mut self) {
+        self.waypoint = Vec::new();
+        self.waypoint_state = WaypointState::ReachedGoal;
+    }
+    pub fn update_time_step(&mut self, navmesh: &NavMesh, time_step: f32) {
+        let acceleration = self.update_waypoint(navmesh, time_step);
+        self.velocity = self.velocity + acceleration * time_step;
+        self.position = self.position + self.velocity * time_step;
+    }
+
+    fn update_waypoint(&mut self, navmesh: &NavMesh, time_step: f32) -> NavVec3 {
+        let n = self.waypoint.len();
+        match self.waypoint_state {
+            IncrementWaypoint => {
+                if n == 0 {
+                    self.waypoint_state = WaypointState::ReachedGoal;
+                    self.update_waypoint(navmesh, time_step)
+                } else {
+                    self.waypoint_state = WaypointState::WaitingForPath;
+                    self.update_waypoint(navmesh, time_step)
+                }
+            },
+            WaitingForPath => {
+                let waypoint = self.waypoint[0];
+                let future = self.position + self.velocity * time_step;
+                let unit_vector = get_normalized_distance_vector(future, waypoint);
+                let predicted = future + unit_vector * time_step;
+                if get_distance_scalar(self.position, waypoint) <= get_distance_scalar(self.position, predicted) {
+                
+                    self.set_waypoint(navmesh, self.waypoint[n-1]);
+                }
+                self.waypoint_state = WaypointState::IncrementWaypoint;
+                unit_vector
+            }
+            _ => {(0.0,0.0,0.0).into()}
+        }
+    }
+
+}
+/* simple apthfinding
+    while not at goal
+    pick a direction to move toward the goal
+    if direction is clear
+    move there
+    else pick another direction
+ */
+fn get_normalized_distance_vector(vec1: NavVec3, vec2: NavVec3) -> NavVec3{
+    let dx = vec1.x - vec2.x;
+    let dy = vec1.y - vec2.y;
+    let dz = vec1.z - vec2.z;
+    let w = dx * dx + dy * dy + dz * dz;
+    NavVec3 {
+        x: dx / w,
+        y: dy / w,
+        z: dz / w
+    }
+}
+fn get_distance_scalar(vec1: NavVec3, vec2: NavVec3) -> f32 {
+    let dx = vec1.x - vec2.x;
+    let dy = vec1.y - vec2.y;
+    let dz = vec1.z - vec2.z;
+    (dx * dx + dy * dy + dz * dz).sqrt()
 }

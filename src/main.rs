@@ -1,6 +1,8 @@
 extern crate glium;
 
 use glium::{glutin, Surface};
+use navmesh::NavMesh;
+use rand::Rng;
 
 mod etc;
 mod body;
@@ -38,15 +40,26 @@ fn main() {
             z: cgmath::Deg(0.0)
         }).into();
     */
+    // construct navmesh verticies
+    let vertices = vec![
+        (1.0,1.0,0.0).into(),
+        (-1.0,1.0,0.0).into(),
+        (1.0,-1.0,0.0).into(),
+        (-1.0,-1.0,0.0).into()
+    ];
+    // construct navmesh triangles
+    let triangles = vec![
+        (0,1,2).into(),
+        (1,2,3).into()
+    ];
+    // construct navmesh object
+    let navmesh = NavMesh::new(vertices,triangles).unwrap();
+
+    // construct bodies to move and draw
     let origin = [0.0, 0.0, 0.0];
     let mut bodies = [
         Body::new(
             1.0,
-            [
-                1.0,
-                1.0,
-                1.0
-            ],
             [0.0, 0.0, 0.0],
             origin,
             orientation,
@@ -56,11 +69,6 @@ fn main() {
                 "d4texture".to_string())),
         Body::new(
             1.0,
-            [
-                1.0,
-                1.0,
-                1.0
-            ],
             [1.0, 1.0, 0.0],
             origin,
             orientation, 
@@ -70,11 +78,6 @@ fn main() {
                 "d6texture".to_string())),
         Body::new(
             1.0,
-            [
-                1.0,
-                1.0,
-                1.0
-            ],
             [0.0, 1.0, 0.0],
             origin,
             orientation, 
@@ -84,12 +87,7 @@ fn main() {
                 "d8texture".to_string())),
         Body::new(
             1.0,
-            [
-                1.0,
-                1.0,
-                1.0
-            ],
-            [0.0, 1.0, 1.0],
+            [0.0, 1.0, 0.0],
             origin,
             orientation, 
             Graphic::new(
@@ -98,11 +96,6 @@ fn main() {
                 "d10texture".to_string())),
         Body::new(
             1.0,
-            [
-                1.0,
-                1.0,
-                1.0
-            ],
             [0.0, -1.0, 0.0],
             origin,
             orientation, 
@@ -112,11 +105,6 @@ fn main() {
                 "d12texture".to_string())),
         Body::new(
             1.0,
-            [
-                1.0,
-                1.0,
-                1.0
-            ],
             [-1.0, 0.0, 0.0],
             origin,
             orientation, 
@@ -125,6 +113,19 @@ fn main() {
                 "icosahedron".to_string(),
                 "d20texture".to_string()))
     ];
+
+    // give waypoints to bodies
+    let mut rng = rand::thread_rng();
+    for body in &mut bodies {
+        body.set_waypoint(
+            &navmesh,
+            (
+                rng.gen::<f32>() % 2.0 - 1.0,
+                rng.gen::<f32>() % 2.0 - 1.0,
+                0.0
+            ).into()
+        );
+    }
 
     let program = build_program(&display, "assets/vertex_shader.glsl", "assets/fragment_shader.glfl");
     let mut last_time = std::time::Instant::now();
@@ -158,7 +159,7 @@ fn main() {
 // update
         while lag >= MS_PER_UPDATE {
             for body in &mut bodies {
-                body.apply_time_step(MS_PER_UPDATE as f32 / 1000.0);
+                body.update_time_step(&navmesh, MS_PER_UPDATE as f32 / 1000.0);
             };
             lag -= MS_PER_UPDATE;
         }
