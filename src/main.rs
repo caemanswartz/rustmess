@@ -53,7 +53,7 @@ fn main() {
         (1,2,3).into()
     ];
     // construct navmesh object
-    let navmesh = NavMesh::new(vertices,triangles).unwrap();
+    let nav_mesh = NavMesh::new(vertices,triangles).unwrap();
     let test1 = NavVec3 {
         x: 1.0,
         y: 2.0,
@@ -133,7 +133,7 @@ fn main() {
         let rn2 = rng.gen::<f32>() * 2.0 - 1.0;
         println!("({},{},0.0)", rn1, rn2);
         body.set_waypoint(
-            &navmesh,
+            &nav_mesh,
             (
                 rn1,
                 rn2,
@@ -174,7 +174,7 @@ fn main() {
 // update
         while lag >= MS_PER_UPDATE {
             for body in &mut bodies {
-                body.update_time_step(MS_PER_UPDATE as f32 / 1000.0);
+                body.update_time_step(&nav_mesh, MS_PER_UPDATE as f32 / 1000.0);
             };
             lag -= MS_PER_UPDATE;
         }
