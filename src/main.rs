@@ -1,7 +1,7 @@
 extern crate glium;
 
 use glium::{glutin, Surface};
-use navmesh::NavMesh;
+use navmesh::{NavMesh,NavVec3};
 use rand::Rng;
 
 mod etc;
@@ -54,6 +54,18 @@ fn main() {
     ];
     // construct navmesh object
     let navmesh = NavMesh::new(vertices,triangles).unwrap();
+    let test1 = NavVec3 {
+        x: 1.0,
+        y: 2.0,
+        z: 3.0,
+    };
+    let test2 = NavVec3 {
+        x: 1.0,
+        y: 1.0,
+        z: 1.0
+    };
+    let test3 = test1 - test2;
+    println!("{:?}", test3);
 
     // construct bodies to move and draw
     let origin = [0.0, 0.0, 0.0];
@@ -117,11 +129,14 @@ fn main() {
     // give waypoints to bodies
     let mut rng = rand::thread_rng();
     for body in &mut bodies {
+        let rn1 = rng.gen::<f32>() * 2.0 - 1.0;
+        let rn2 = rng.gen::<f32>() * 2.0 - 1.0;
+        println!("({},{},0.0)", rn1, rn2);
         body.set_waypoint(
             &navmesh,
             (
-                rng.gen::<f32>() % 2.0 - 1.0,
-                rng.gen::<f32>() % 2.0 - 1.0,
+                rn1,
+                rn2,
                 0.0
             ).into()
         );
@@ -159,7 +174,7 @@ fn main() {
 // update
         while lag >= MS_PER_UPDATE {
             for body in &mut bodies {
-                body.update_time_step(&navmesh, MS_PER_UPDATE as f32 / 1000.0);
+                body.update_time_step(MS_PER_UPDATE as f32 / 1000.0);
             };
             lag -= MS_PER_UPDATE;
         }
