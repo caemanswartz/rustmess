@@ -8,6 +8,7 @@ use navmesh::{
     NavVec3,
     NavMesh
 };
+
 #[derive(Debug,Clone)]
 pub struct Body {
     mass: f32,
@@ -57,36 +58,54 @@ impl Body {
         ).unwrap());
     }
     pub fn update_time_step(&mut self, nav_mesh: &NavMesh, time_step: f32) {
-        let acceleration = self.update_waypoint(nav_mesh, time_step);
-        self.velocity = self.velocity + acceleration * time_step;
-        self.position = self.position + self.velocity * time_step;
+        match self.update_waypoint(nav_mesh, time_step) {
+            Some(vector) => {
+                self.velocity = self.velocity + vector * time_step;
+                self.position = self.position + self.velocity * time_step;
+            },
+            None => {}
+        }
     }
 
-    fn update_waypoint(&mut self, nav_mesh: &NavMesh, time_step: f32) -> NavVec3 {
+    fn update_waypoint(&mut self, _nav_mesh: &NavMesh, time_step: f32) -> Option<NavVec3> {
         let max_velocity = 1.0;
-        let future = self.position + self.velocity * time_step;
         let n = self.waypoint.len();
-        // come to a stop if no waypoint
+        // check for waypoints
         if n == 0 {
-            get_normalized_distance_vector(future,self.position)
+            None
+        // plan movement based on velocity and waypoint
         } else {
-            // plan movement based on velocity and waypoint
             let waypoint = self.waypoint[0];
-            let velocity_scalar = get_distance_scalar((0.0,0.0,0.0).into(),self.velocity);
+            // get velocity length
+            let velocity_length = get_distance_scalar((0.0,0.0,0.0).into(),self.velocity);
+            // get normalized velocity vector
             let velocity_correction = get_normalized_distance_vector((0.0,0.0,0.0).into(), self.velocity);
+            // get vector to waypoint
             let velocity_desired = get_normalized_distance_vector(self.position,waypoint);
-            let planned_vector = velocity_desired * (max_velocity - velocity_scalar).max(0.0)
-                - velocity_correction * velocity_scalar.min(1.0);
-            let predicted = future + planned_vector * time_step;
-            let distance_waypoint = get_distance_scalar(self.position, waypoint);
-            // remove waypoint if passed
-            if distance_waypoint <= get_distance_scalar(self.position, predicted) {
-                let m = get_distance_scalar((0.0,0.0,0.0).into(),self.velocity);
-                if n > 1 || m < time_step {
+            // construct velocity adjustment from correction and desired to keep velocity scalar 1.0 or less
+            //      desired vector multiplied by percentage of max velocity not used for correction
+            //      correction vector multiplied by percetage of max velocity currently used
+            let planned_vector = velocity_desired * (max_velocity - velocity_length).max(0.0)
+                - velocity_correction * velocity_length.min(1.0);
+            // predict fucutre location
+            let future_position = self.position + self.velocity * time_step;
+            // get position after planned move
+            let predicted_position = future_position + planned_vector * time_step;
+            // calculate predicted postion's distance to current waypoint
+            let predicted_distance_to_waypoint = get_distance_scalar(predicted_position, waypoint);
+            // check if moved further than current distance to waypoint
+            if predicted_distance_to_waypoint <= get_distance_scalar(self.position, waypoint) {
+                // check if multiple waypoints or velocity is very small
+                if n > 1 || velocity_length < time_step {
                     self.waypoint.remove(0);
+                    // stop movement if no more waypoints
+                    if n == 0 {
+                        self.velocity = (0.0,0.0,0.0).into();
+                        return None
+                    }
                 }
             }
-            planned_vector
+            Some(planned_vector)
         }
     }
 }
